@@ -1,5 +1,5 @@
-# В данном файле будут размещены все источники, которые помогли разработчикам создать данное приложение.
-Все источники будут разделены на три части: статьи, CodeEx (Code Example), датасеты, источники для MVP.
+# Здесь будут размещены все источники, которые помогли разработчикам в создании данного приложения.
+Все источники будут поделены на четыре части: статьи, CodeEx (Code Example), датасеты, источники для MVP.
 
 # Список статей:
 * [Global Texture Enhancement for Fake Face Detection In the Wild](https://openaccess.thecvf.com/content_CVPR_2020/papers/Liu_Global_Texture_Enhancement_for_Fake_Face_Detection_in_the_Wild_CVPR_2020_paper.pdf)
