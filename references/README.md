@@ -1,5 +1,5 @@
 # Здесь будут размещены все источники, которые помогли разработчикам в создании данного приложения.
-Все источники будут поделены на четыре части: статьи, CodeEx (Code Example), датасеты, источники для MVP.
+Все источники будут поделены на пять частей: статьи, CodeEx (Code Example), датасеты, источники для MVP, книги.
 
 # Список статей:
 * [Global Texture Enhancement for Fake Face Detection In the Wild](https://openaccess.thecvf.com/content_CVPR_2020/papers/Liu_Global_Texture_Enhancement_for_Fake_Face_Detection_in_the_Wild_CVPR_2020_paper.pdf)
@@ -17,11 +17,16 @@
 * [An Analysis of Recent Advances in Deepfake Image Detection in an Evolving Threat Landscape](https://arxiv.org/abs/2404.16212)
 * [Faster Than Lies: Real-time Deepfake Detection using Binary Neural Networks](https://arxiv.org/abs/2406.04932)
 * [A comprehensive review of Binary Neural Network](https://arxiv.org/abs/2110.06804)
+* [Package for Explainable visualisation AI for computer vision.](https://pypi.org/project/grad-cam/)
+* [Pytorch Grad Cam](https://github.com/jacobgil/pytorch-grad-cam/tree/master?tab=readme-ov-file)
 
 # Список CodeEx:
 * [FakeImage Detection Using ConvNet with explanation](https://www.kaggle.com/code/vasunegi1995/fakeimage-detection-using-convnet-with-explanation)
 * [Real and AI images Classifier](https://www.kaggle.com/code/sahildanayak/real-and-ai-images-classifier)
 * [Fake vs. Real Image Classification using VGG16](https://www.kaggle.com/code/priyasarageorge/fake-vs-real-image-classification-using-vgg16)
+* [Classification of Real and AI-Generated Images](https://www.kaggle.com/code/hamedaraab/classification-of-real-and-ai-generated-images)
+* [notebook4fbc020f7d](https://www.kaggle.com/code/abhiramrayidi/notebook4fbc020f7d)
+
 
 
 # Список датасетов:
@@ -31,3 +36,10 @@ Detection in Human Faces](https://arxiv.org/pdf/1803.09179v1)
 
 # Список источников для MVP:
 * https://www.mkdocs.org/
+
+# Книги:
+1. Mohamed Elgendy. Deep Learning for Vision Systems.
+2. Valliappa Lakshmanan, Martin Görner & Ryan Gillard. Practical Machine Learning for Computer Vision. 
+3. Richard Szeliski. Computer Vision: Algorithms and Applications.
+4. [PyTorch Computer Vision Cookbook.](https://github.com/akansh12/Computer_vision_Book_solution/blob/main/Michael%20Avendi%20-%20PyTorch%20Computer%20Vision%20Cookbook_%20Over%2070%20recipes%20to%20solve%20computer%20vision%20and%20image%20processing%20problems%20using%20PyTorch%201.x-Packt%20Publishing%20(2020).pdf)
+5. [Modern Computer Vision with PyTorch, Second Edition.](https://github.com/PacktPublishing/Modern-Computer-Vision-with-PyTorch-2E)
