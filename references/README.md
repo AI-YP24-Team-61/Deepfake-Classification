@@ -26,6 +26,9 @@
 * [Fake vs. Real Image Classification using VGG16](https://www.kaggle.com/code/priyasarageorge/fake-vs-real-image-classification-using-vgg16)
 * [Classification of Real and AI-Generated Images](https://www.kaggle.com/code/hamedaraab/classification-of-real-and-ai-generated-images)
 * [notebook4fbc020f7d](https://www.kaggle.com/code/abhiramrayidi/notebook4fbc020f7d)
+* [Transfer Learning Example](https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html#finetuning-the-convnet)
+* [Julius Ruseckas](https://juliusruseckas.github.io/)
+* [Building a Logistic Regression Classifier in PyTorch](https://machinelearningmastery.com/building-a-logistic-regression-classifier-in-pytorch/)
 
 
 
