@@ -39,6 +39,9 @@ Detection in Human Faces](https://arxiv.org/pdf/1803.09179v1)
 
 # Список источников для MVP:
 * https://www.mkdocs.org/
+* https://www.restack.io/docs/streamlit-knowledge-streamlit-fastapi-docker-compose
+* https://medium.com/latinxinai/fastapi-and-streamlit-app-with-docker-compose-e4d18d78d61d
+* 
 
 # Книги:
 1. Mohamed Elgendy. Deep Learning for Vision Systems.
