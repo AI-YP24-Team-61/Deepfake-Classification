@@ -1,0 +1,6 @@
+fastapi
+joblib
+torch
+torchvision
+seaborn
+torchsummary

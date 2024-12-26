@@ -1,0 +1,217 @@
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torchvision import datasets, models, transforms
+import matplotlib.pyplot as plt
+import time
+import os
+from PIL import Image
+from tempfile import TemporaryDirectory
+from torchsummary import summary
+
+# EPOCHS = 5
+BATCH_SIZE = 128
+PART_OF_DATASET = 8
+EPOCHS = 1
+
+torch.manual_seed(0)
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(f"Using {device} device!")
+
+class CustomModel(nn.Module):
+    def __init__(self, lr=0.01, weight_decay=0.01):
+        super().__init__()
+        self.model = models.resnet18(weights='IMAGENET1K_V1')
+        #self.model = models.mobilenet_v3_small(weights='IMAGENET1K_V1')
+        # Фиксируем все параметры нейронной сети. Будем настраивать параметры только в fc-слое
+        for param in self.model.parameters():
+              param.requires_grad = False
+        # Для ResNet установить model.fc, для mobilnet_v3_small установить model.classifier || self.model.fc.in_features
+        self.model.fc = nn.Sequential(nn.Linear(self.model.fc.in_features, 1), 
+                                      nn.Sigmoid())
+        self.model = self.model.cuda()
+        # BCELoss - это обычный logloss. CrossEntropy для логистической регрессии использовать некорректно
+        self.loss = torch.nn.BCELoss()
+        # Для ResNet установить model.fc, для mobilnet_v3_small установить model.classifier
+        self.optimizer = optim.SGD(self.model.fc.parameters(), lr=lr, momentum=0.9, weight_decay=weight_decay)
+
+    def forward(self, x):
+        return self.model(x)
+
+
+
+
+data_transforms = {
+    'train': transforms.Compose([
+        transforms.Resize((32, 32)),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ]),
+    'test': transforms.Compose([
+        transforms.Resize((32, 32)),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ]),
+}
+
+def train_model(model:CustomModel, 
+                dataloaders=None, 
+                dataset_sizes=None,
+                num_epochs=10,
+                ):
+    """
+    Функция для обучения нейронной сети.
+
+    model - архитектура НС
+    criterion - функция ошибки
+    optimizer - вид градиентного спуска (SGD, Momentum, Adam)
+    sheduler - объект, позволяющий итеративно изменять градиентный шаг
+    num_epochs - число эпох
+    """
+    since = time.time()
+    # Создаем словарь промежуточных статистик, чтобы считать качество на каждой эпохе
+    dict_stat = {
+        'train_loss': [],
+        'train_acc': [],
+        'test_loss': [],
+        'test_acc': []
+    }
+
+    # Create a temporary directory to save training checkpoints
+    with TemporaryDirectory() as tempdir:
+        best_model_params_path = os.path.join(tempdir, 'best_model_params.pt')
+        torch.save(model.state_dict(), best_model_params_path)
+        best_acc = 0.0
+
+        for epoch in range(num_epochs):
+            print(f'Epoch {epoch}/{num_epochs - 1}')
+            print('-' * 10)
+
+            # Each epoch has a training and validation phase
+            for phase in ['train', 'test']:
+                if phase == 'train':
+                    model.train()  # Ставим train-mode на тренировочной выборке. Есть операции, которые необходимо делать только во время обучения (например, DropOut), а на этапе валидации их считать не надо. https://stackoverflow.com/questions/51433378/what-does-model-train-do-in-pytorch
+                else:
+                    model.eval()   # Ставим eval-mode на тестовой выборке
+
+                running_loss = 0.0
+                running_corrects = 0
+
+                # Iterate over data.
+                for inputs, labels in dataloaders[phase]:
+
+                    inputs = inputs.cuda()
+                    inputs = inputs.to(torch.float32)
+
+                    labels = labels.cuda()
+                    labels = labels.to(torch.float32)
+
+                    # Обнуляем вектор градиентов
+                    # Вот здесь описано зачем мы это делаем: https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
+                    # И здесь: https://discuss.pytorch.org/t/what-does-the-backward-function-do/9944
+                    model.optimizer.zero_grad()
+
+                    # forward
+                    # track history if only in train
+                    # Для чего нужен torch.set_grad_enabled:
+                    # https://discuss.pytorch.org/t/why-we-need-torch-set-grad-enabled-false-here/41240
+                    with torch.set_grad_enabled(phase == 'train'):
+                        outputs = model(inputs)
+
+                        # Устанавливаю treshold на уровне 0.6. Если вероятность принадлежности классу 1 больше 0.6, то относим объект к классу 1 (REAL)
+                        if True:
+                            outputs = outputs.squeeze()
+                            # Можно поиграть с treshold. Конкретно этот показывает неплохой ACCURACY
+                            preds = (outputs > 0.6).int().reshape(-1)
+                            
+                        # Внутри любой функции Loss'а есть параметр reduction. Он отвечает за усреднение лосса по батчу.
+                        if True:
+                            loss = model.loss(outputs, labels)
+
+                        # backward + optimize только на стадии обучения НС
+                        if phase == 'train':
+                            # Считаем вектор градиентов
+                            loss.backward()
+                            # Делаем градиентный шаг
+                            model.optimizer.step()
+
+                    # Считаем статистики
+                    # За каждую эпоху мы должны считать средний loss и accuracy по всем объектам.
+                    # Мы умножаем loss на размер батча для корректности расчета средней оценки, 
+                    # потому что может сложиться так, что в последний батч не попало заданное число объектов и поэтому было бы неправильно в дальнейшем делить суммарный loss на мощность всей выборки (epoch_loss = running_loss / dataset_sizes[phase])
+                    # https://discuss.pytorch.org/t/confused-about-set-grad-enabled/38417
+                    running_loss += loss.item() * inputs.size(0)
+                    running_corrects += torch.sum(preds == labels.data)
+
+                epoch_loss = running_loss / dataset_sizes[phase]
+                epoch_acc = running_corrects.double() / dataset_sizes[phase]
+
+                # Заносим статистики в словарь
+                dict_stat[f'{phase}_loss'].append(epoch_loss)
+                dict_stat[f'{phase}_acc'].append(epoch_acc.item())
+
+                print(f'{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
+
+                # Сохраняем отдельно модель, которая дала лучшую accuracy
+                if phase == 'test' and epoch_acc > best_acc:
+                    best_acc = epoch_acc
+                    torch.save(model.state_dict(), best_model_params_path)
+
+            print()
+
+        time_elapsed = time.time() - since
+        print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
+        print(f'Best val Acc: {best_acc:4f}')
+
+        # load best model weights
+        model.load_state_dict(torch.load(best_model_params_path, weights_only=True))
+    return model, dict_stat
+
+
+
+
+data_dir = "D:\\1_Магистратура_ВШЭ\\1_AI_YP24_Team_61\\Deepfake-Classification\\app\\data\\cifake-real-and-ai-generated-synthetic-images"
+image_datasets_logreg = {x: datasets.ImageFolder(os.path.join(data_dir, x),
+                                                 data_transforms[x]
+                                                 ) for x in ['train', 'test']}
+# dataloaders_logreg = {x: torch.utils.data.DataLoader(image_datasets_logreg[x], 
+#                                                      batch_size=512,
+#                                                      shuffle=True, 
+#                                                      num_workers=0, 
+#                                                      pin_memory=True)
+#                 for x in ['train', 'test']}
+
+# Хотим урезать подаваемый на вход датасет в половину (НЕОБХОДИМО УСОВЕРШЕНСТВОВАТЬ И СДЕЛАТЬ УРЕЗАНИЕ, ТОЛЬКО ЕСЛИ РАЗМЕР ДАТАСЕТА ПРЕВЫШАЕТ ОПРЕДЕЛЕННОЕ ЧИСЛО НАБЛЮДЕНИЙ)
+evens = list(range(0, len(image_datasets_logreg['train']), PART_OF_DATASET))
+train_dataset = torch.utils.data.Subset(image_datasets_logreg['train'], evens)
+
+evens = list(range(0, len(image_datasets_logreg['test']), PART_OF_DATASET))
+test_dataset = torch.utils.data.Subset(image_datasets_logreg['test'], evens)
+
+train_loader = torch.utils.data.DataLoader(train_dataset, 
+										   batch_size=BATCH_SIZE,
+										   shuffle=True, 
+										   num_workers=0, 
+										   pin_memory=True)
+
+test_loader = torch.utils.data.DataLoader(test_dataset, 
+										   batch_size=BATCH_SIZE,
+										   shuffle=True, 
+										   num_workers=0, 
+										   pin_memory=True)
+
+#dataset_sizes = {x: len(image_datasets_logreg[x]) for x in ['train', 'test']}
+dataset_sizes = {x: len(train_dataset) if x == 'train' else len(test_dataset) for x in ['train', 'test']}
+class_names = image_datasets_logreg['train'].classes
+
+dataloaders_logreg = {x: train_loader if x == 'train' else test_loader for x in ['train', 'test']}
+
+# Обучаем модель
+model = CustomModel(lr=0.01, 
+                    weight_decay=0.01)
+model_inf, dict_stat = train_model(model, 
+                                   dataloaders=dataloaders_logreg,
+                                   dataset_sizes=dataset_sizes,
+                                   num_epochs=EPOCHS)
+
