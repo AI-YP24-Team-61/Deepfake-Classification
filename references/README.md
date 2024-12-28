@@ -48,6 +48,7 @@ Detection in Human Faces](https://arxiv.org/pdf/1803.09179v1)
 * https://github.com/davidefiocco/streamlit-fastapi-model-serving/tree/main/fastapi
 * https://pytorch.org/tutorials/beginner/saving_loading_models.html#what-is-a-state-dict
 * https://pytorch.org/get-started/locally/
+* https://pytorch.org/vision/0.20/transforms.html
 
 # Книги:
 1. Mohamed Elgendy. Deep Learning for Vision Systems.
