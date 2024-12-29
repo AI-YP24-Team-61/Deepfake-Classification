@@ -6,3 +6,5 @@ kaggle.json
 *.jpg
 # Folders
 app/backend/__pycache__/
+# ZIP
+*.zip
