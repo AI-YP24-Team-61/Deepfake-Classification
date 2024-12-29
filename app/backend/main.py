@@ -61,7 +61,7 @@ class set_response(BaseModel):
     message: str | None = None
     
 class predict_request(BaseModel):
-    image_path: str = r"..\data\inference_image\3.jpg"
+    image_path: str = r"..\data\inference_image\inference_user_image.jpg"
 
 
 class predict_response(BaseModel):

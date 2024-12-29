@@ -9,7 +9,7 @@ from request_utils import post_data, get_data
 import time
 
 st.title("Team 61. Deepfake-Classification.")
-st.header("Загрузка датасета")
+st.header("Загрузка датасета", divider="gray")
 st.text('Загрузите ZIP-архив с вашими данными для обучения модели. \nСтруктура каталога и имена директорий внутри архива должны соответствовать формату ниже:')
 st.text("""
         .zip
@@ -37,7 +37,7 @@ if uploaded_file is not None:
         st.write("ZIP-file saved and unziped")
 
 if uploaded_file is not None:
-    st.header(f"Профиль данных из {uploaded_file.name}")
+    st.header(f"Профиль данных из {uploaded_file.name}", divider="gray")
     response_eda = asyncio.run(post_data('eda', input_data={}))
 
     df = pd.DataFrame(response_eda)
@@ -56,15 +56,14 @@ if uploaded_file is not None:
     st.table(df)
     #st.write(response_eda)
 
-st.header(f"Настройка нейронной сети")
+st.header(f"Настройка нейронной сети", divider="gray")
 
 id = st.text_input("Введите идентификатор (ID) для нейронной сети")
 id = id.lower().replace(" ", "")
 
 st.write(id)
 
-type_nn_pretrain = st.selectbox("Выберите архитектуру предобученной НС",
-                                ("ResNet18", "MobileNetV3"))
+type_nn_pretrain = 'ResNet18'
 
 end_activation_function = "Sigmoid"
 
@@ -82,7 +81,6 @@ weight_decay = st.slider("Выберите величину коэффициен
 
 
 left, middle, right = st.columns(3)
-
 if left.button("Обучить нейронную сеть", use_container_width=True):
     if id != '' and id is not None:
         since = time.time()
@@ -101,6 +99,9 @@ if left.button("Обучить нейронную сеть", use_container_width
             st.write('Модель с таким ID уже существует. Введите другой ID.')
         else:
             left.write(f"Нейронная сеть обучена. Время обучения: {time_elapsed:.2f} секунд.")
+            # response_models = list(asyncio.run(get_data('models'))[0].keys())
+            # list_fitted_id = list(response_models[0].keys())
+
     else:
         left.markdown("Введите ID.")
 
@@ -113,6 +114,36 @@ with st.sidebar:
             st.write('Нет обученных моделей')
 
 
+st.header(f"Инференс обученной модели", divider="gray")
+
+if asyncio.run(get_data('models'))[0]:
+    set_model_id = st.selectbox(
+        "Выберите обученную модель для инференса",
+        tuple(asyncio.run(get_data('models'))[0].keys())
+    )
+
+    if st.button(f"Установить '{set_model_id}' в качестве модели для инференса.", use_container_width=True, type='secondary'):
+        asyncio.run(post_data('set', input_data={'id': set_model_id}))
+        st.write(f"'{set_model_id}' установлена в качестве модели для инференса.")
+
+    uploaded_file = st.file_uploader("Выберите изображение для инференса", type=['jpg'])
+    if uploaded_file is not None:
+    # Сохраняем zip-архив от пользователя в папку
+        with open(fr"..\data\inference_image\inference_user_image.{uploaded_file.name.split('.')[1]}", "wb") as f:
+            f.write(uploaded_file.getbuffer())
+
+        st.image(uploaded_file, width=200)
+
+        if st.button(f"PREDICT", use_container_width=True, type="primary"):
+            predict_response = asyncio.run(post_data('predict', input_data={'id': set_model_id}))
+            st.write(f"Вероятность принадлежности изображения к классу REAL: **{predict_response['real_prob']:.2f}**")
+            if predict_response['is_real']:
+                st.write("Изображение является **РЕАЛЬНЫМ**")
+            else:
+                st.write("Изображение является **ФЕЙКОВЫМ**")
+                
+else:
+    st.write("Нет обученных моделей для инференса.")
 
 
 
