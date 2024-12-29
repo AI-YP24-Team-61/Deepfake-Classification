@@ -4,3 +4,5 @@
 kaggle.json
 # IMG
 *.jpg
+# Folders
+app/backend/__pycache__/
