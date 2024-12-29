@@ -8,6 +8,8 @@ import os
 from PIL import Image
 from tempfile import TemporaryDirectory
 from torchsummary import summary
+from tqdm import tqdm
+import numpy as np
 
 # EPOCHS = 5
 BATCH_SIZE = 128
@@ -206,6 +208,102 @@ def data_pipeline(data_dir=data_dir):
     
     return dataset_sizes, dataloaders_logreg
 
+def predict_real(image_object, model):
+    transform = transforms.Compose([
+	transforms.Resize((32, 32)),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+    im_tensor = transform(image_object)
+    im_tensor = im_tensor.reshape(-1, 3, 32, 32)
+    im_tensor = im_tensor.cuda()
+    # В pred лежит вероятность отнесения к классу 1 (Real)
+    #print('-'*10, model)
+    pred = model(im_tensor)
+    # Если True - значит Real.
+    return {'real_prob': float(pred[-1][-1]), 
+            'is_real': float(pred[-1][-1]) > 0.6}
+
+    
+
+def calculate_statistics(data):
+	dct_targetHist = {}
+	for i_split in ['train', 'test']:
+		if i_split == 'train':
+			len_train = len(data[i_split])
+		else:
+			len_test = len(data[i_split])
+		# Тензоры для хранения прокси-информации по RGB каналам
+		tsum = torch.tensor([0.0, 0.0, 0.0])
+		tsum_sq = torch.tensor([0.0, 0.0, 0.0])
+		# Переменные для расчета числа наблюдений в каждом классе
+		cnt_fake = 0
+		cnt_real = 0
+		# Инициализируем списки для расчета статистик по размерам
+		widths = []
+		heights =[]
+		for image, target in tqdm(data[i_split]):
+			# Прокси-расчеты для вычисления статистики по размерам изобрежений
+			image_sz = torch.permute(image, (1, 2, 0))
+			widths.append(image_sz.shape[0]) # заносим в список параметры широты всех изображений
+			heights.append(image_sz.shape[1]) # заносим в список параметры широты всех изображений
+			# Прокси-расчеты для вычисления статистики по mean/std
+			tsum += image.sum(axis=(1, 2))
+			tsum_sq += (image**2).sum(axis=(1, 2))
+			# Считаем число экземпляров каждого класса в разрезе train/test
+			if target == 1:
+				cnt_real += 1
+			elif target == 0: 
+				cnt_fake += 1
+		if i_split == 'train':
+			cntPixels = (np.array(widths) * np.array(heights)).sum() # количество пикселей в выборке
+		elif i_split == 'test':
+			cntPixels = (np.array(widths) * np.array(heights)).sum() # количество пикселей в выборке
+		# Считаем статистики по размерам изображений
+		array_sizes = np.multiply(widths, heights) # Создаем массив всех размеров (width*heights)
+		avg_size = np.mean(array_sizes)
+		min_size = np.min(array_sizes)
+		max_size = np.max(array_sizes)
+		# Считаем mean/std в разрезе каждого класса
+		mean_rgb = tsum / cntPixels
+		var_rgb = (tsum_sq / cntPixels) - (mean_rgb**2) # E(X^2) - E^2(X)
+		std_rgb = torch.sqrt(var_rgb)
+		dct_targetHist[i_split] = dct_targetHist.get(i_split, 
+												{
+													'fake_cnt': cnt_fake,
+													'real_cnt': cnt_real,
+													'avg_size': float(avg_size),
+													'min_size': float(min_size),
+													'max_size': float(max_size),
+													'mean_rgb': mean_rgb.tolist(),
+													'var_rgb': var_rgb.tolist(),
+													'std_rgb': std_rgb.tolist()
+													})
+	return dct_targetHist
+
+def make_eda():
+    DATA_SPLITS = ["train", "test"]
+    # Предварительная загрузка и трансформация данных из локальной папки на ПК
+    data = {
+        # Создаем словарь, где по ключу train/test будут лежать соответствующие данные
+        # По очереди обращаемся к папкам train/test, чтобы загрузить оттуда данные
+        split: datasets.ImageFolder(
+            # Если путь f"{DATASET_DIR}/{split}" содержит другие папки, то названия этих папок устанавливаются в качестве
+            # классов (LABELS) для данных в папке f"{DATASET_DIR}/{split}".
+            # Узнать метки классов можно с помощью вызова data['train'].classes
+            fr"..\data\dataset_example\{split}",
+            #
+            transform=transforms.Compose(
+                [
+                    transforms.ToTensor(),
+                ]
+            ),
+        )
+        for split in ['train', 'test']
+    }
+    print("Данные загружены!")
+    return calculate_statistics(data)
+
 if __name__ == "__main__":
     torch.manual_seed(0)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -223,18 +321,9 @@ if __name__ == "__main__":
     print(dict_stat)
 
 
-def predict_real(image_object, model):
-    transform = transforms.Compose([
-	transforms.Resize((32, 32)),
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
-    im_tensor = transform(image_object)
-    im_tensor = im_tensor.reshape(-1, 3, 32, 32)
-    im_tensor = im_tensor.cuda()
-    # В pred лежит вероятность отнесения к классу 1 (Real)
-    #print('-'*10, model)
-    pred = model(im_tensor)
-    # Если True - значит Real.
-    return {'real_prob': float(pred[-1][-1]), 
-            'is_real': float(pred[-1][-1]) > 0.6}
+
+
+
+    
+
+

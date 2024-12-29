@@ -10,7 +10,7 @@ import joblib
 import torch
 
 
-from model_preprocessing import CustomModel, data_pipeline, train_model, predict_real
+from model_preprocessing import CustomModel, data_pipeline, train_model, predict_real, make_eda
 
 torch.manual_seed(0)
 
@@ -31,6 +31,16 @@ class Hyperparam(BaseModel):
     batch_size: int = 128
     lr: float = 0.01
     C: float = 0.01
+
+class Statistics(BaseModel):
+    fake_cnt: float | int
+    real_cnt: float | int
+    avg_size: float | int
+    min_size: float | int
+    max_size: float | int
+    mean_rgb: List[float|int]
+    var_rgb: List[float|int]
+    std_rgb: List[float|int]
 
 # class load_data_request(BaseModel):
 #     ...
@@ -57,6 +67,13 @@ class predict_request(BaseModel):
 class predict_response(BaseModel):
     real_prob: float
     is_real: bool
+
+class make_eda_request(BaseModel):
+    _: None = None
+class make_eda_response(BaseModel):
+    train: Statistics
+    test: Statistics
+
 
 
 
@@ -121,6 +138,10 @@ async def predict(request: predict_request):
     #print('-'*10, model)
     pred = predict_real(im, model)
     return pred
+
+@app.post("/eda", response_model=make_eda_response, status_code=HTTPStatus.CREATED)
+async def eda(request: make_eda_request):
+    return make_eda()
     
     
 

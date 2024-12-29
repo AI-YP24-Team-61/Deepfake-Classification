@@ -4,6 +4,7 @@ from zipfile import ZipFile
 
 import plotly.express as px
 import asyncio
+from request_utils import post_data
 
 st.title("Team 61. Deepfake-Classification.")
 st.header("Загрузка датасета")
@@ -32,3 +33,24 @@ if uploaded_file is not None:
     # into a specific location. 
 		zObject.extractall(path=r"..\data")
 		st.write("ZIP-file saved and unziped")
+
+if uploaded_file is not None:
+	st.header(f"Анализ данных из {uploaded_file.name}")
+	response_eda = asyncio.run(post_data('eda', input_data={}))
+
+	df = pd.DataFrame(response_eda)
+	df = df.T.copy()
+	df['mean_red'] = df['mean_rgb'].apply(lambda x: x[0])
+	df['mean_green'] = df['mean_rgb'].apply(lambda x: x[1])
+	df['mean_blue'] = df['mean_rgb'].apply(lambda x: x[2])
+
+	df['std_red'] = df['std_rgb'].apply(lambda x: x[0])
+	df['std_green'] = df['std_rgb'].apply(lambda x: x[1])
+	df['std_blue'] = df['std_rgb'].apply(lambda x: x[2])
+	df = df[['fake_cnt', 'real_cnt', 
+		     'avg_size', 'min_size', 'max_size', 
+			 'mean_red', 'mean_green', 'mean_blue', 
+			 'std_red', 'std_green', 'std_blue']].T
+	st.table(df)
+
+	st.write(response_eda)
