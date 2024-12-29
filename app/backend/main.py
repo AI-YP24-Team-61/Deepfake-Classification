@@ -99,7 +99,7 @@ async def fit(request: fit_request):
         model = CustomModel(lr=request.hyperparameters.lr, 
                             weight_decay=request.hyperparameters.C)
         dataset_sizes, dataloaders_logreg = data_pipeline(data_dir=data_dir)
-        model_inf, dict_stat = train_model(model=model,
+        model_inf, dict_stat, best_acc = train_model(model=model,
                                         id_model=request.id,
                                         dataloaders=dataloaders_logreg,
                                         dataset_sizes=dataset_sizes,
@@ -110,7 +110,8 @@ async def fit(request: fit_request):
             'batch_size': request.hyperparameters.batch_size,
             'lr': request.hyperparameters.lr,
             'C': request.hyperparameters.C,
-            'num_epochs': 1 
+            'num_epochs': 1,
+            'accuracy': float(best_acc)
         }
         models_classes[request.id] = model
 

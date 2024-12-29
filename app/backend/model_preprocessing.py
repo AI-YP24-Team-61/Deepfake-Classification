@@ -163,7 +163,7 @@ def train_model(model:CustomModel,
 
     # load best model weights
     model.load_state_dict(torch.load(best_model_params_path, weights_only=True))
-    return model, dict_stat
+    return model, dict_stat, best_acc
 
 
 
