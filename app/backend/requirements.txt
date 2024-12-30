@@ -4,3 +4,5 @@ torch
 torchvision
 seaborn
 torchsummary
+uvicorn
+tqdm

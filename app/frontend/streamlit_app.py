@@ -25,47 +25,79 @@ st.text(
         └────┴─REAL"""
 )
 
-uploaded_file = st.file_uploader("Выберите ZIP-архив", type=["zip"])
+uploaded_file = st.file_uploader("Выберите ZIP-архив.", type=["zip"])
 
 
 if uploaded_file is not None:
-    # Сохраняем zip-архив от пользователя в папку
-    with open(r"..\data\load_user_dataset.zip", "wb") as f:
-        f.write(uploaded_file.getbuffer())
+    if st.button("Загрузить данные и вывести EDA", use_container_width=True, type="primary"):
+        # Сохраняем zip-архив от пользователя в папку
+        with open(r"..\data\load_user_dataset.zip", "wb") as f:
+            f.write(uploaded_file.getbuffer())
 
-    with ZipFile(r"..\data\load_user_dataset.zip", "r") as zObject:
-        zObject.extractall(path=r"..\data")
-        st.write("ZIP-file saved and unziped")
+        with ZipFile(r"..\data\load_user_dataset.zip", "r") as zObject:
+            zObject.extractall(path=r"..\data")
+            st.write("ZIP-file saved and unziped")
+        
+        st.header(f"Профиль данных из {uploaded_file.name}", divider="gray")
+        response_eda = asyncio.run(post_data("eda", input_data={}))
 
-if uploaded_file is not None:
-    st.header(f"Профиль данных из {uploaded_file.name}", divider="gray")
-    response_eda = asyncio.run(post_data("eda", input_data={}))
+        df = pd.DataFrame(response_eda)
+        df = df.T.copy()
+        df["mean_red"] = df["mean_rgb"].apply(lambda x: x[0])
+        df["mean_green"] = df["mean_rgb"].apply(lambda x: x[1])
+        df["mean_blue"] = df["mean_rgb"].apply(lambda x: x[2])
 
-    df = pd.DataFrame(response_eda)
-    df = df.T.copy()
-    df["mean_red"] = df["mean_rgb"].apply(lambda x: x[0])
-    df["mean_green"] = df["mean_rgb"].apply(lambda x: x[1])
-    df["mean_blue"] = df["mean_rgb"].apply(lambda x: x[2])
+        df["std_red"] = df["std_rgb"].apply(lambda x: x[0])
+        df["std_green"] = df["std_rgb"].apply(lambda x: x[1])
+        df["std_blue"] = df["std_rgb"].apply(lambda x: x[2])
+        df = df[
+            [
+                "fake_cnt",
+                "real_cnt",
+                "avg_size",
+                "min_size",
+                "max_size",
+                "mean_red",
+                "mean_green",
+                "mean_blue",
+                "std_red",
+                "std_green",
+                "std_blue",
+            ]
+        ].T
+        st.table(df)
+else:
+    st.write("**Внимание! EDA по датасету будет доступен только после загрузки ZIP-архива.**")
 
-    df["std_red"] = df["std_rgb"].apply(lambda x: x[0])
-    df["std_green"] = df["std_rgb"].apply(lambda x: x[1])
-    df["std_blue"] = df["std_rgb"].apply(lambda x: x[2])
-    df = df[
-        [
-            "fake_cnt",
-            "real_cnt",
-            "avg_size",
-            "min_size",
-            "max_size",
-            "mean_red",
-            "mean_green",
-            "mean_blue",
-            "std_red",
-            "std_green",
-            "std_blue",
-        ]
-    ].T
-    st.table(df)
+# if uploaded_file is not None:
+#     st.header(f"Профиль данных из {uploaded_file.name}", divider="gray")
+#     response_eda = asyncio.run(post_data("eda", input_data={}))
+
+#     df = pd.DataFrame(response_eda)
+#     df = df.T.copy()
+#     df["mean_red"] = df["mean_rgb"].apply(lambda x: x[0])
+#     df["mean_green"] = df["mean_rgb"].apply(lambda x: x[1])
+#     df["mean_blue"] = df["mean_rgb"].apply(lambda x: x[2])
+
+#     df["std_red"] = df["std_rgb"].apply(lambda x: x[0])
+#     df["std_green"] = df["std_rgb"].apply(lambda x: x[1])
+#     df["std_blue"] = df["std_rgb"].apply(lambda x: x[2])
+#     df = df[
+#         [
+#             "fake_cnt",
+#             "real_cnt",
+#             "avg_size",
+#             "min_size",
+#             "max_size",
+#             "mean_red",
+#             "mean_green",
+#             "mean_blue",
+#             "std_red",
+#             "std_green",
+#             "std_blue",
+#         ]
+#     ].T
+#     st.table(df)
 
 st.header("Настройка нейронной сети", divider="gray")
 

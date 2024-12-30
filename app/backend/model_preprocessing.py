@@ -12,6 +12,10 @@ BATCH_SIZE = 128
 PART_OF_DATASET = 8
 EPOCHS = 1
 
+torch.manual_seed(0)
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(f"Using {device} device!")
+
 
 class CustomModel(nn.Module):
     def __init__(self, lr=0.01, weight_decay=0.01):
@@ -25,7 +29,7 @@ class CustomModel(nn.Module):
         self.model.fc = nn.Sequential(
             nn.Linear(self.model.fc.in_features, 1), nn.Sigmoid()
         )
-        self.model = self.model.cuda()
+        self.model = self.model.to(device)
         # BCELoss - это обычный logloss. CrossEntropy для логистической регрессии использовать некорректно
         self.loss = torch.nn.BCELoss()
         # Для ResNet установить model.fc, для mobilnet_v3_small установить model.classifier
@@ -96,10 +100,10 @@ def train_model(
             # Iterate over data.
             for inputs, labels in dataloaders[phase]:
 
-                inputs = inputs.cuda()
+                inputs = inputs.to(device)
                 inputs = inputs.to(torch.float32)
 
-                labels = labels.cuda()
+                labels = labels.to(device)
                 labels = labels.to(torch.float32)
 
                 model.optimizer.zero_grad()
@@ -153,7 +157,7 @@ def train_model(
     return model, dict_stat, best_acc
 
 
-data_dir = r"..\data\cifake-real-and-ai-generated-synthetic-images"
+data_dir = r"..\data\dataset"
 
 
 def data_pipeline(data_dir=data_dir):
@@ -203,7 +207,7 @@ def predict_real(image_object, model):
     )
     im_tensor = transform(image_object)
     im_tensor = im_tensor.reshape(-1, 3, 32, 32)
-    im_tensor = im_tensor.cuda()
+    im_tensor = im_tensor.to(device)
     # В pred лежит вероятность отнесения к классу 1 (Real)
     pred = model(im_tensor)
     # Если True - значит Real.
