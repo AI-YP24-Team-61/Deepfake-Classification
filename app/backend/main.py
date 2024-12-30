@@ -7,7 +7,13 @@ from pydantic import BaseModel
 import torch
 
 
-from model_preprocessing import CustomModel, data_pipeline, train_model, predict_real, make_eda
+from model_preprocessing import (
+    CustomModel,
+    data_pipeline,
+    train_model,
+    predict_real,
+    make_eda,
+)
 
 torch.manual_seed(0)
 
@@ -20,14 +26,12 @@ models_classes = {}
 # Пространство инференса
 models_inference = {}
 
-app = FastAPI(
-    title="Team 61. Deepfake-Classification."
-)
+app = FastAPI(title="Team 61. Deepfake-Classification.")
 
 
 class Hyperparam(BaseModel):
-    type_nn_pretrain: str | None = 'ResNet18'
-    end_activation_function: str | None = 'Sigmoid'
+    type_nn_pretrain: str | None = "ResNet18"
+    end_activation_function: str | None = "Sigmoid"
     batch_size: int = 128
     lr: float = 0.01
     C: float = 0.01
@@ -92,26 +96,31 @@ async def models():
 @app.post("/fit", response_model=fit_response, status_code=HTTPStatus.CREATED)
 async def fit(request: fit_request):
     if request.id in models_fitted.keys():
-        return {"message": f"Model with id '{request.id}' already exist. Enter another id."}
+        return {
+            "message": f"Model with id '{request.id}' already exist. Enter another id."
+        }
     else:
         data_dir = r"..\data\cifake-real-and-ai-generated-synthetic-images"
         # Обучаем модель
-        model = CustomModel(lr=request.hyperparameters.lr,
-                            weight_decay=request.hyperparameters.C)
+        model = CustomModel(
+            lr=request.hyperparameters.lr, weight_decay=request.hyperparameters.C
+        )
         dataset_sizes, dataloaders_logreg = data_pipeline(data_dir=data_dir)
-        model_inf, dict_stat, best_acc = train_model(model=model,
-                                                     id_model=request.id,
-                                                     dataloaders=dataloaders_logreg,
-                                                     dataset_sizes=dataset_sizes,
-                                                     num_epochs=1)
+        model_inf, dict_stat, best_acc = train_model(
+            model=model,
+            id_model=request.id,
+            dataloaders=dataloaders_logreg,
+            dataset_sizes=dataset_sizes,
+            num_epochs=1,
+        )
         models_fitted[request.id] = {
-            'type_nn_pretrain': request.hyperparameters.type_nn_pretrain,
-            'end_activation_function': request.hyperparameters.end_activation_function,
-            'batch_size': request.hyperparameters.batch_size,
-            'lr': request.hyperparameters.lr,
-            'C': request.hyperparameters.C,
-            'num_epochs': 1,
-            'accuracy': float(best_acc)
+            "type_nn_pretrain": request.hyperparameters.type_nn_pretrain,
+            "end_activation_function": request.hyperparameters.end_activation_function,
+            "batch_size": request.hyperparameters.batch_size,
+            "lr": request.hyperparameters.lr,
+            "C": request.hyperparameters.C,
+            "num_epochs": 1,
+            "accuracy": float(best_acc),
         }
         models_classes[request.id] = model
 
@@ -121,12 +130,12 @@ async def fit(request: fit_request):
 @app.post("/set", response_model=set_response, status_code=HTTPStatus.CREATED)
 async def set(request: set_request):
     models_inference.clear()
-    model_path = fr".\model_weights\{request.id}.pt"
-    models_inference['id'] = request.id
+    model_path = rf".\model_weights\{request.id}.pt"
+    models_inference["id"] = request.id
     # Загружаем модель для инференса и добавляем ее в пространство инференса
     model_test = models_classes[request.id]
     model_test.load_state_dict(torch.load(model_path, weights_only=True))
-    models_inference['model_inference'] = model_test
+    models_inference["model_inference"] = model_test
 
     return {"message": f"Model '{request.id}' is ready for inference"}
 
@@ -134,7 +143,7 @@ async def set(request: set_request):
 @app.post("/predict", response_model=predict_response, status_code=HTTPStatus.CREATED)
 async def predict(request: predict_request):
     im = Image.open(request.image_path)
-    model = models_inference['model_inference']
+    model = models_inference["model_inference"]
     pred = predict_real(im, model)
     return pred
 
