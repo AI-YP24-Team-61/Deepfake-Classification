@@ -80,7 +80,7 @@ def train_model(
     dict_stat = {"train_loss": [], "train_acc": [], "test_loss": [], "test_acc": []}
 
     # Create a temporary directory to save training checkpoints
-    best_model_params_path = rf".\model_weights\{id_model}.pt"
+    best_model_params_path = rf"./model_weights/{id_model}.pt" # rf".\model_weights\{id_model}.pt"
     best_acc = 0.0
 
     for epoch in range(num_epochs):
@@ -157,7 +157,7 @@ def train_model(
     return model, dict_stat, best_acc
 
 
-data_dir = r"..\data\dataset"
+data_dir = r"../data/dataset" # r".\data\dataset"
 
 
 def data_pipeline(data_dir=data_dir):
@@ -288,7 +288,7 @@ def make_eda():
             # то названия этих папок устанавливаются в качестве
             # классов (LABELS) для данных в папке f"{DATASET_DIR}/{split}".
             # Узнать метки классов можно с помощью вызова data['train'].classes
-            rf"..\data\dataset_example\{split}",
+            rf"../data/dataset/{split}",
             #
             transform=transforms.Compose(
                 [

@@ -2,7 +2,10 @@ import asyncio
 import aiohttp
 
 
-API_URL = "http://127.0.0.1:8000"
+# API_URL = "http://127.0.0.1:8000"
+# API_URL = "http://localhost:8000"
+# API_URL = "http://192.168.99.100:8000"
+API_URL = "http://backend:8000"
 
 
 async def post_data(endpoint: str, input_data, timeout=0):

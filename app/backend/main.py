@@ -66,7 +66,7 @@ class set_response(BaseModel):
 
 
 class predict_request(BaseModel):
-    image_path: str = r"..\data\inference_image\inference_user_image.jpg"
+    image_path: str = r"../data/inference_image/inference_user_image.jpg"
 
 
 class predict_response(BaseModel):
@@ -100,7 +100,7 @@ async def fit(request: fit_request):
             "message": f"Model with id '{request.id}' already exist. Enter another id."
         }
     else:
-        data_dir = r"..\data\cifake-real-and-ai-generated-synthetic-images"
+        data_dir = r"../data/dataset"  # r"..\data\dataset"
         # Обучаем модель
         model = CustomModel(
             lr=request.hyperparameters.lr, weight_decay=request.hyperparameters.C
@@ -130,7 +130,7 @@ async def fit(request: fit_request):
 @app.post("/set", response_model=set_response, status_code=HTTPStatus.CREATED)
 async def set(request: set_request):
     models_inference.clear()
-    model_path = rf".\model_weights\{request.id}.pt"
+    model_path = rf"./model_weights/{request.id}.pt"  # rf".\model_weights\{request.id}.pt"
     models_inference["id"] = request.id
     # Загружаем модель для инференса и добавляем ее в пространство инференса
     model_test = models_classes[request.id]

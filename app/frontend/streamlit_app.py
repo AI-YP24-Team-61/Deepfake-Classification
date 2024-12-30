@@ -33,11 +33,11 @@ if uploaded_file is not None:
         "Загрузить данные и вывести EDA", use_container_width=True, type="primary"
     ):
         # Сохраняем zip-архив от пользователя в папку
-        with open(r"..\data\load_user_dataset.zip", "wb") as f:
+        with open(r"../data/load_user_dataset.zip", "wb") as f:
             f.write(uploaded_file.getbuffer())
 
-        with ZipFile(r"..\data\load_user_dataset.zip", "r") as zObject:
-            zObject.extractall(path=r"..\data")
+        with ZipFile(r"../data/load_user_dataset.zip", "r") as zObject:
+            zObject.extractall(path=r"../data")
             st.write("ZIP-file saved and unziped")
 
         st.header(f"Профиль данных из {uploaded_file.name}", divider="gray")
@@ -196,7 +196,7 @@ if asyncio.run(get_data("models"))[0]:
     if uploaded_file is not None:
         # Сохраняем zip-архив от пользователя в папку
         with open(
-            rf"..\data\inference_image\inference_user_image.{uploaded_file.name.split('.')[1]}",
+            rf"../data/inference_image/inference_user_image.{uploaded_file.name.split('.')[1]}",
             "wb",
         ) as f:
             f.write(uploaded_file.getbuffer())

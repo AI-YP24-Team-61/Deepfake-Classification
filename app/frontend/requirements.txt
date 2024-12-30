@@ -5,3 +5,5 @@ pip-chill
 plotly
 streamlit
 plotly-express
+fastapi
+uvicorn
