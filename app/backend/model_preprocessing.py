@@ -2,12 +2,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, models, transforms
-import matplotlib.pyplot as plt
 import time
 import os
-from PIL import Image
-from tempfile import TemporaryDirectory
-from torchsummary import summary
 from tqdm import tqdm
 import numpy as np
 
@@ -16,16 +12,17 @@ BATCH_SIZE = 128
 PART_OF_DATASET = 8
 EPOCHS = 1
 
+
 class CustomModel(nn.Module):
     def __init__(self, lr=0.01, weight_decay=0.01):
         super().__init__()
         self.model = models.resnet18(weights='IMAGENET1K_V1')
-        #self.model = models.mobilenet_v3_small(weights='IMAGENET1K_V1')
+        # self.model = models.mobilenet_v3_small(weights='IMAGENET1K_V1')
         # Фиксируем все параметры нейронной сети. Будем настраивать параметры только в fc-слое
         for param in self.model.parameters():
-              param.requires_grad = False
+            param.requires_grad = False
         # Для ResNet установить model.fc, для mobilnet_v3_small установить model.classifier || self.model.fc.in_features
-        self.model.fc = nn.Sequential(nn.Linear(self.model.fc.in_features, 1), 
+        self.model.fc = nn.Sequential(nn.Linear(self.model.fc.in_features, 1),
                                       nn.Sigmoid())
         self.model = self.model.cuda()
         # BCELoss - это обычный logloss. CrossEntropy для логистической регрессии использовать некорректно
@@ -35,8 +32,6 @@ class CustomModel(nn.Module):
 
     def forward(self, x):
         return self.model(x)
-
-
 
 
 data_transforms = {
@@ -52,9 +47,10 @@ data_transforms = {
     ]),
 }
 
-def train_model(model:CustomModel, 
-                id_model:str = 'test_model',
-                dataloaders=None, 
+
+def train_model(model: CustomModel,
+                id_model: str = 'test_model',
+                dataloaders=None,
                 dataset_sizes=None,
                 num_epochs=10,
                 ):
@@ -77,7 +73,7 @@ def train_model(model:CustomModel,
     }
 
     # Create a temporary directory to save training checkpoints
-    best_model_params_path = f"D:\\1_Магистратура_ВШЭ\\1_AI_YP24_Team_61\\Deepfake-Classification\\app\\backend\\model_weights\\{id_model}.pt"
+    best_model_params_path = fr".\model_weights\{id_model}.pt"
     best_acc = 0.0
 
     for epoch in range(num_epochs):
@@ -87,7 +83,7 @@ def train_model(model:CustomModel,
         # Each epoch has a training and validation phase
         for phase in ['train', 'test']:
             if phase == 'train':
-                model.train()  # Ставим train-mode на тренировочной выборке. Есть операции, которые необходимо делать только во время обучения (например, DropOut), а на этапе валидации их считать не надо. https://stackoverflow.com/questions/51433378/what-does-model-train-do-in-pytorch
+                model.train()
             else:
                 model.eval()   # Ставим eval-mode на тестовой выборке
 
@@ -103,24 +99,17 @@ def train_model(model:CustomModel,
                 labels = labels.cuda()
                 labels = labels.to(torch.float32)
 
-                # Обнуляем вектор градиентов
-                # Вот здесь описано зачем мы это делаем: https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
-                # И здесь: https://discuss.pytorch.org/t/what-does-the-backward-function-do/9944
                 model.optimizer.zero_grad()
 
-                # forward
-                # track history if only in train
-                # Для чего нужен torch.set_grad_enabled:
-                # https://discuss.pytorch.org/t/why-we-need-torch-set-grad-enabled-false-here/41240
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
 
-                    # Устанавливаю treshold на уровне 0.6. Если вероятность принадлежности классу 1 больше 0.6, то относим объект к классу 1 (REAL)
+                    # Если вероятность принадлежности классу 1 больше 0.6, то относим объект к классу 1 (REAL)
                     if True:
                         outputs = outputs.squeeze()
                         # Можно поиграть с treshold. Конкретно этот показывает неплохой ACCURACY
                         preds = (outputs > 0.6).int().reshape(-1)
-                        
+
                     # Внутри любой функции Loss'а есть параметр reduction. Он отвечает за усреднение лосса по батчу.
                     if True:
                         loss = model.loss(outputs, labels)
@@ -132,11 +121,6 @@ def train_model(model:CustomModel,
                         # Делаем градиентный шаг
                         model.optimizer.step()
 
-                # Считаем статистики
-                # За каждую эпоху мы должны считать средний loss и accuracy по всем объектам.
-                # Мы умножаем loss на размер батча для корректности расчета средней оценки, 
-                # потому что может сложиться так, что в последний батч не попало заданное число объектов и поэтому было бы неправильно в дальнейшем делить суммарный loss на мощность всей выборки (epoch_loss = running_loss / dataset_sizes[phase])
-                # https://discuss.pytorch.org/t/confused-about-set-grad-enabled/38417
                 running_loss += loss.item() * inputs.size(0)
                 running_corrects += torch.sum(preds == labels.data)
 
@@ -166,129 +150,109 @@ def train_model(model:CustomModel,
     return model, dict_stat, best_acc
 
 
+data_dir = r"..\data\cifake-real-and-ai-generated-synthetic-images"
 
-
-data_dir = "D:\\1_Магистратура_ВШЭ\\1_AI_YP24_Team_61\\Deepfake-Classification\\app\\data\\cifake-real-and-ai-generated-synthetic-images"
 
 def data_pipeline(data_dir=data_dir):
     image_datasets_logreg = {x: datasets.ImageFolder(os.path.join(data_dir, x),
-                                                    data_transforms[x]
-                                                    ) for x in ['train', 'test']}
-    # dataloaders_logreg = {x: torch.utils.data.DataLoader(image_datasets_logreg[x], 
-    #                                                      batch_size=512,
-    #                                                      shuffle=True, 
-    #                                                      num_workers=0, 
-    #                                                      pin_memory=True)
-    #                 for x in ['train', 'test']}
-
-    # Хотим урезать подаваемый на вход датасет в половину (НЕОБХОДИМО УСОВЕРШЕНСТВОВАТЬ И СДЕЛАТЬ УРЕЗАНИЕ, ТОЛЬКО ЕСЛИ РАЗМЕР ДАТАСЕТА ПРЕВЫШАЕТ ОПРЕДЕЛЕННОЕ ЧИСЛО НАБЛЮДЕНИЙ)
+                                                     data_transforms[x]) for x in ['train', 'test']}
     evens = list(range(0, len(image_datasets_logreg['train']), PART_OF_DATASET))
     train_dataset = torch.utils.data.Subset(image_datasets_logreg['train'], evens)
 
     evens = list(range(0, len(image_datasets_logreg['test']), PART_OF_DATASET))
     test_dataset = torch.utils.data.Subset(image_datasets_logreg['test'], evens)
 
-    train_loader = torch.utils.data.DataLoader(train_dataset, 
-                                            batch_size=BATCH_SIZE,
-                                            shuffle=True, 
-                                            num_workers=0, 
-                                            pin_memory=True)
+    train_loader = torch.utils.data.DataLoader(train_dataset,
+                                               batch_size=BATCH_SIZE,
+                                               shuffle=True,
+                                               num_workers=0,
+                                               pin_memory=True)
 
-    test_loader = torch.utils.data.DataLoader(test_dataset, 
-                                            batch_size=BATCH_SIZE,
-                                            shuffle=True, 
-                                            num_workers=0, 
-                                            pin_memory=True)
+    test_loader = torch.utils.data.DataLoader(test_dataset,
+                                              batch_size=BATCH_SIZE,
+                                              shuffle=True,
+                                              num_workers=0,
+                                              pin_memory=True)
 
-    #dataset_sizes = {x: len(image_datasets_logreg[x]) for x in ['train', 'test']}
     dataset_sizes = {x: len(train_dataset) if x == 'train' else len(test_dataset) for x in ['train', 'test']}
-    class_names = image_datasets_logreg['train'].classes
-
     dataloaders_logreg = {x: train_loader if x == 'train' else test_loader for x in ['train', 'test']}
-    
     return dataset_sizes, dataloaders_logreg
+
 
 def predict_real(image_object, model):
     transform = transforms.Compose([
-	transforms.Resize((32, 32)),
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+         transforms.Resize((32, 32)),
+         transforms.ToTensor(),
+         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
     im_tensor = transform(image_object)
     im_tensor = im_tensor.reshape(-1, 3, 32, 32)
     im_tensor = im_tensor.cuda()
     # В pred лежит вероятность отнесения к классу 1 (Real)
-    #print('-'*10, model)
     pred = model(im_tensor)
     # Если True - значит Real.
-    return {'real_prob': float(pred[-1][-1]), 
+    return {'real_prob': float(pred[-1][-1]),
             'is_real': float(pred[-1][-1]) > 0.6}
 
-    
 
 def calculate_statistics(data):
-	dct_targetHist = {}
-	for i_split in ['train', 'test']:
-		if i_split == 'train':
-			len_train = len(data[i_split])
-		else:
-			len_test = len(data[i_split])
-		# Тензоры для хранения прокси-информации по RGB каналам
-		tsum = torch.tensor([0.0, 0.0, 0.0])
-		tsum_sq = torch.tensor([0.0, 0.0, 0.0])
-		# Переменные для расчета числа наблюдений в каждом классе
-		cnt_fake = 0
-		cnt_real = 0
-		# Инициализируем списки для расчета статистик по размерам
-		widths = []
-		heights =[]
-		for image, target in tqdm(data[i_split]):
-			# Прокси-расчеты для вычисления статистики по размерам изобрежений
-			image_sz = torch.permute(image, (1, 2, 0))
-			widths.append(image_sz.shape[0]) # заносим в список параметры широты всех изображений
-			heights.append(image_sz.shape[1]) # заносим в список параметры широты всех изображений
-			# Прокси-расчеты для вычисления статистики по mean/std
-			tsum += image.sum(axis=(1, 2))
-			tsum_sq += (image**2).sum(axis=(1, 2))
-			# Считаем число экземпляров каждого класса в разрезе train/test
-			if target == 1:
-				cnt_real += 1
-			elif target == 0: 
-				cnt_fake += 1
-		if i_split == 'train':
-			cntPixels = (np.array(widths) * np.array(heights)).sum() # количество пикселей в выборке
-		elif i_split == 'test':
-			cntPixels = (np.array(widths) * np.array(heights)).sum() # количество пикселей в выборке
-		# Считаем статистики по размерам изображений
-		array_sizes = np.multiply(widths, heights) # Создаем массив всех размеров (width*heights)
-		avg_size = np.mean(array_sizes)
-		min_size = np.min(array_sizes)
-		max_size = np.max(array_sizes)
-		# Считаем mean/std в разрезе каждого класса
-		mean_rgb = tsum / cntPixels
-		var_rgb = (tsum_sq / cntPixels) - (mean_rgb**2) # E(X^2) - E^2(X)
-		std_rgb = torch.sqrt(var_rgb)
-		dct_targetHist[i_split] = dct_targetHist.get(i_split, 
-												{
-													'fake_cnt': cnt_fake,
-													'real_cnt': cnt_real,
-													'avg_size': float(avg_size),
-													'min_size': float(min_size),
-													'max_size': float(max_size),
-													'mean_rgb': mean_rgb.tolist(),
-													'var_rgb': var_rgb.tolist(),
-													'std_rgb': std_rgb.tolist()
-													})
-	return dct_targetHist
+    dct_targetHist = {}
+    for i_split in ['train', 'test']:
+        # Тензоры для хранения прокси-информации по RGB каналам
+        tsum = torch.tensor([0.0, 0.0, 0.0])
+        tsum_sq = torch.tensor([0.0, 0.0, 0.0])
+        # Переменные для расчета числа наблюдений в каждом классе
+        cnt_fake = 0
+        cnt_real = 0
+        # Инициализируем списки для расчета статистик по размерам
+        widths = []
+        heights = []
+        for image, target in tqdm(data[i_split]):
+            # Прокси-расчеты для вычисления статистики по размерам изобрежений
+            image_sz = torch.permute(image, (1, 2, 0))
+            widths.append(image_sz.shape[0])  # Заносим в список параметры широты всех изображений
+            heights.append(image_sz.shape[1])  # Заносим в список параметры широты всех изображений
+            # Прокси-расчеты для вычисления статистики по mean/std
+            tsum += image.sum(axis=(1, 2))
+            tsum_sq += (image**2).sum(axis=(1, 2))
+            # Считаем число экземпляров каждого класса в разрезе train/test
+            if target == 1:
+                cnt_real += 1
+            elif target == 0:
+                cnt_fake += 1
+        if i_split == 'train':
+            cntPixels = (np.array(widths) * np.array(heights)).sum()  # Количество пикселей в выборке
+        elif i_split == 'test':
+            cntPixels = (np.array(widths) * np.array(heights)).sum()  # Количество пикселей в выборке
+        # Считаем статистики по размерам изображений
+        array_sizes = np.multiply(widths, heights)  # Создаем массив всех размеров (width*heights)
+        avg_size = np.mean(array_sizes)
+        min_size = np.min(array_sizes)
+        max_size = np.max(array_sizes)
+        # Считаем mean/std в разрезе каждого класса
+        mean_rgb = tsum / cntPixels
+        var_rgb = (tsum_sq / cntPixels) - (mean_rgb**2)  # E(X^2) - E^2(X)
+        std_rgb = torch.sqrt(var_rgb)
+        dct_targetHist[i_split] = dct_targetHist.get(i_split,
+                                                     {'fake_cnt': cnt_fake,
+                                                      'real_cnt': cnt_real,
+                                                      'avg_size': float(avg_size),
+                                                      'min_size': float(min_size),
+                                                      'max_size': float(max_size),
+                                                      'mean_rgb': mean_rgb.tolist(),
+                                                      'var_rgb': var_rgb.tolist(),
+                                                      'std_rgb': std_rgb.tolist()})
+    return dct_targetHist
+
 
 def make_eda():
-    DATA_SPLITS = ["train", "test"]
     # Предварительная загрузка и трансформация данных из локальной папки на ПК
     data = {
         # Создаем словарь, где по ключу train/test будут лежать соответствующие данные
         # По очереди обращаемся к папкам train/test, чтобы загрузить оттуда данные
         split: datasets.ImageFolder(
-            # Если путь f"{DATASET_DIR}/{split}" содержит другие папки, то названия этих папок устанавливаются в качестве
+            # Если путь f"{DATASET_DIR}/{split}" содержит другие папки,
+            # то названия этих папок устанавливаются в качестве
             # классов (LABELS) для данных в папке f"{DATASET_DIR}/{split}".
             # Узнать метки классов можно с помощью вызова data['train'].classes
             fr"..\data\dataset_example\{split}",
@@ -304,26 +268,19 @@ def make_eda():
     print("Данные загружены!")
     return calculate_statistics(data)
 
+
 if __name__ == "__main__":
     torch.manual_seed(0)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(f"Using {device} device!")
 
     # Обучаем модель
-    model = CustomModel(lr=0.01, 
+    model = CustomModel(lr=0.01,
                         weight_decay=0.01)
 
     dataset_sizes, dataloaders_logreg = data_pipeline(data_dir=data_dir)
-    model_inf, dict_stat = train_model(model, 
-                                    dataset_sizes=dataset_sizes,
-                                    dataloaders=dataloaders_logreg,
-                                    num_epochs=EPOCHS)
+    model_inf, dict_stat = train_model(model,
+                                       dataset_sizes=dataset_sizes,
+                                       dataloaders=dataloaders_logreg,
+                                       num_epochs=EPOCHS)
     print(dict_stat)
-
-
-
-
-
-    
-
-
