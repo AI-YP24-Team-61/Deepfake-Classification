@@ -73,36 +73,6 @@ else:
         "**Внимание! EDA по датасету будет доступен только после загрузки ZIP-архива.**"
     )
 
-# if uploaded_file is not None:
-#     st.header(f"Профиль данных из {uploaded_file.name}", divider="gray")
-#     response_eda = asyncio.run(post_data("eda", input_data={}))
-
-#     df = pd.DataFrame(response_eda)
-#     df = df.T.copy()
-#     df["mean_red"] = df["mean_rgb"].apply(lambda x: x[0])
-#     df["mean_green"] = df["mean_rgb"].apply(lambda x: x[1])
-#     df["mean_blue"] = df["mean_rgb"].apply(lambda x: x[2])
-
-#     df["std_red"] = df["std_rgb"].apply(lambda x: x[0])
-#     df["std_green"] = df["std_rgb"].apply(lambda x: x[1])
-#     df["std_blue"] = df["std_rgb"].apply(lambda x: x[2])
-#     df = df[
-#         [
-#             "fake_cnt",
-#             "real_cnt",
-#             "avg_size",
-#             "min_size",
-#             "max_size",
-#             "mean_red",
-#             "mean_green",
-#             "mean_blue",
-#             "std_red",
-#             "std_green",
-#             "std_blue",
-#         ]
-#     ].T
-#     st.table(df)
-
 st.header("Настройка нейронной сети", divider="gray")
 
 id = st.text_input("Введите идентификатор (ID) для нейронной сети")
@@ -161,9 +131,6 @@ if left.button("Обучить нейронную сеть", use_container_width
             left.write(
                 f"Нейронная сеть обучена. Время обучения: {time_elapsed:.2f} секунд."
             )
-            # response_models = list(asyncio.run(get_data('models'))[0].keys())
-            # list_fitted_id = list(response_models[0].keys())
-
     else:
         left.markdown("Введите ID.")
 

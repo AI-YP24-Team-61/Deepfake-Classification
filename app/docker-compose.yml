@@ -6,9 +6,7 @@ services:
     ports:
       - 8000:8000
     volumes:
-#      - ./backend:/app/backend
       - ./data:/app/data
-    #command: "uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload"
     restart: always
     networks:
       - app
@@ -21,9 +19,7 @@ services:
     depends_on:
       - backend
     volumes:
-#      - ./frontend:/app
       - ./data:/app/data
-    #command: "streamlit run ./frontend/streamlit_app.py"
     restart: always
     networks:
       - app

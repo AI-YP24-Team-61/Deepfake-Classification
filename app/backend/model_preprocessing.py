@@ -7,7 +7,6 @@ import os
 from tqdm import tqdm
 import numpy as np
 
-# EPOCHS = 5
 BATCH_SIZE = 128
 PART_OF_DATASET = 8
 EPOCHS = 1
@@ -80,7 +79,9 @@ def train_model(
     dict_stat = {"train_loss": [], "train_acc": [], "test_loss": [], "test_acc": []}
 
     # Create a temporary directory to save training checkpoints
-    best_model_params_path = rf"./model_weights/{id_model}.pt" # rf".\model_weights\{id_model}.pt"
+    best_model_params_path = (
+        rf"./model_weights/{id_model}.pt"  # rf".\model_weights\{id_model}.pt"
+    )
     best_acc = 0.0
 
     for epoch in range(num_epochs):
@@ -157,7 +158,7 @@ def train_model(
     return model, dict_stat, best_acc
 
 
-data_dir = r"../data/dataset" # r".\data\dataset"
+data_dir = r"../data/dataset"  # r".\data\dataset"
 
 
 def data_pipeline(data_dir=data_dir):
