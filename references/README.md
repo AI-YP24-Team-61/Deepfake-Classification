@@ -29,6 +29,9 @@
 * [Transfer Learning Example](https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html#finetuning-the-convnet)
 * [Julius Ruseckas](https://juliusruseckas.github.io/)
 * [Building a Logistic Regression Classifier in PyTorch](https://machinelearningmastery.com/building-a-logistic-regression-classifier-in-pytorch/)
+* https://pytorch.org/tutorials/beginner/basics/buildmodel_tutorial.html
+* https://github.com/Lightning-AI/pytorch-lightning
+* https://pytorch.org/tutorials/beginner/introyt/trainingyt.html
 
 
 
@@ -41,7 +44,11 @@ Detection in Human Faces](https://arxiv.org/pdf/1803.09179v1)
 * https://www.mkdocs.org/
 * https://www.restack.io/docs/streamlit-knowledge-streamlit-fastapi-docker-compose
 * https://medium.com/latinxinai/fastapi-and-streamlit-app-with-docker-compose-e4d18d78d61d
-* 
+* https://github.com/bflaven/ia_usages/tree/main/ia_deploy_api_ml_architecture
+* https://github.com/davidefiocco/streamlit-fastapi-model-serving/tree/main/fastapi
+* https://pytorch.org/tutorials/beginner/saving_loading_models.html#what-is-a-state-dict
+* https://pytorch.org/get-started/locally/
+* https://pytorch.org/vision/0.20/transforms.html
 
 # Книги:
 1. Mohamed Elgendy. Deep Learning for Vision Systems.

@@ -1,0 +1,9 @@
+aiohttp
+ipykernel
+matplotlib
+pip-chill
+plotly
+streamlit
+plotly-express
+fastapi
+uvicorn
