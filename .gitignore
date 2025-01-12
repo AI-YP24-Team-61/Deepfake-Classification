@@ -4,3 +4,13 @@
 kaggle.json
 # IMG
 *.jpg
+*.jpeg
+*.png
+*.webp
+# Folders
+app/backend/__pycache__/
+app/frontend/__pycache__/
+# ZIP
+*.zip
+# Pickle
+*.pt
