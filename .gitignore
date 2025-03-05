@@ -10,6 +10,7 @@ kaggle.json
 # Folders
 app/backend/__pycache__/
 app/frontend/__pycache__/
+.venv/
 # ZIP
 *.zip
 # Pickle
