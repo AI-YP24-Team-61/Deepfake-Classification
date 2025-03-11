@@ -28,7 +28,7 @@ def save_best_model(model, best_acc, epoch_acc, best_model_params_path):
 def hinge_loss(y_pred, y_true):
     return torch.mean(torch.clamp(1 - y_true * y_pred, min=0))
 
-def process_phase(model, phase, dataloaders, criterion, optimizer, isLogreg, isSVM):
+def process_phase(model, phase, dataloaders, criterion, optimizer, isLogreg, isSVM, isNN):
     """
     Обработка одной фазы (тренировка или валидация) на одной эпохе.
     """
@@ -41,8 +41,8 @@ def process_phase(model, phase, dataloaders, criterion, optimizer, isLogreg, isS
     running_corrects = 0
 
     for inputs, labels in dataloaders[phase]:
-        inputs = inputs.cuda().to(torch.float32)
-        labels = labels.cuda().to(torch.float32)
+        inputs = inputs.cuda()#.to(torch.float32)
+        labels = labels.cuda()#.to(torch.float32)
 
         optimizer.zero_grad()
 
@@ -52,15 +52,17 @@ def process_phase(model, phase, dataloaders, criterion, optimizer, isLogreg, isS
             if isLogreg:
                 outputs = outputs.squeeze()
                 preds = (outputs > 0.6).int().reshape(-1)
+                loss = criterion(outputs, labels)
+
             elif isSVM:
                 outputs = outputs.squeeze()
                 margin = outputs * labels
                 preds = (margin > 0).int().reshape(-1)
-
-            if isLogreg:
-                loss = criterion(outputs, labels)
-            elif isSVM:
                 loss = hinge_loss(outputs, labels)
+
+            elif isNN:
+                _, preds = torch.max(outputs, 1)
+                loss = criterion(outputs, labels)        
 
             if phase == 'train':
                 loss.backward()
@@ -79,12 +81,12 @@ def update_statistics(dict_stat, phase, epoch_loss, epoch_acc):
     dict_stat[f'{phase}_acc'].append(epoch_acc.item())
     print(f'{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
 
-def train_epoch(model, dataloaders, criterion, optimizer, scheduler, isLogreg, isSVM, dataset_sizes, dict_stat, best_acc, best_model_params_path):
+def train_epoch(model, dataloaders, criterion, optimizer, scheduler, isLogreg, isSVM, isNN, dataset_sizes, dict_stat, best_acc, best_model_params_path):
     """
     Обучение модели на одной эпохе.
     """
     for phase in ['train', 'test']:
-        running_loss, running_corrects = process_phase(model, phase, dataloaders, criterion, optimizer, isLogreg, isSVM)
+        running_loss, running_corrects = process_phase(model, phase, dataloaders, criterion, optimizer, isLogreg, isSVM, isNN)
         epoch_loss = running_loss / dataset_sizes[phase]
         epoch_acc = running_corrects.double() / dataset_sizes[phase]
         update_statistics(dict_stat, phase, epoch_loss, epoch_acc)
@@ -97,7 +99,7 @@ def train_epoch(model, dataloaders, criterion, optimizer, scheduler, isLogreg, i
                                        best_model_params_path=best_model_params_path)
     return best_acc
 
-def train_model(model, criterion, optimizer, scheduler, dataset_sizes, dataloaders=None, num_epochs=10, isLogreg=False, isSVM=False):
+def train_model(model, criterion, optimizer, scheduler, dataset_sizes, dataloaders=None, num_epochs=10, isLogreg=False, isSVM=False, isNN=False):
     """
     Основная функция для обучения модели.
     """
@@ -118,6 +120,7 @@ def train_model(model, criterion, optimizer, scheduler, dataset_sizes, dataloade
                                    scheduler=scheduler, 
                                    isLogreg=isLogreg, 
                                    isSVM=isSVM, 
+                                   isNN=isNN,
                                    dataset_sizes=dataset_sizes, 
                                    dict_stat=dict_stat, 
                                    best_acc=max(best_acc_list),
