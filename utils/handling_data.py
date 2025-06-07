@@ -3,15 +3,15 @@ import numpy as np
 
 
 
-def summarize_diagnostics(history):
+def summarize_diagnostics(history, text_title='Log Loss', title="ResNet18"):
     """
     Функция для отрисовки значений LOSS и ACCURACY на каждой эпохе
     """
     fig,ax=plt.subplots(2)
-    fig.suptitle("Loss")
+    #fig.suptitle("Loss")
     fig.tight_layout()
     # plot loss
-    ax[0].set_title('Log Loss')
+    ax[0].set_title(f'{text_title}')
     ax[0].plot(history['train_loss'], color='blue', label='Training loss')
     ax[0].plot(history['test_loss'], color='orange', label='validation loss')
     ax[0].legend(loc='best', shadow=True)

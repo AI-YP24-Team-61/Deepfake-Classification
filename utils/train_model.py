@@ -52,7 +52,7 @@ def process_phase(model, phase, dataloaders, criterion, optimizer, isLogreg, isS
             if isLogreg:
                 outputs = outputs.squeeze()
                 preds = (outputs > 0.6).int().reshape(-1)
-                loss = criterion(outputs, labels)
+                loss = criterion(outputs, labels.float())
 
             elif isSVM:
                 outputs = outputs.squeeze()
@@ -97,6 +97,7 @@ def train_epoch(model, dataloaders, criterion, optimizer, scheduler, isLogreg, i
                                        best_acc=best_acc,
                                        epoch_acc=epoch_acc,
                                        best_model_params_path=best_model_params_path)
+        #print(epoch_loss, epoch_acc)
     return best_acc
 
 def train_model(model, criterion, optimizer, scheduler, dataset_sizes, dataloaders=None, num_epochs=10, isLogreg=False, isSVM=False, isNN=False):
