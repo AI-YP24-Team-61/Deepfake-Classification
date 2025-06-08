@@ -8,7 +8,7 @@ def summarize_diagnostics(history, text_title='Log Loss', title="ResNet18"):
     Функция для отрисовки значений LOSS и ACCURACY на каждой эпохе
     """
     fig,ax=plt.subplots(2)
-    #fig.suptitle("Loss")
+    fig.suptitle(f"{title}")
     fig.tight_layout()
     # plot loss
     ax[0].set_title(f'{text_title}')
